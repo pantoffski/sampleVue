@@ -5,7 +5,7 @@
   </div>
 </template>
 <script>
-import { mapState, mapMutations, mapActions } from "vuex";
+import { mapState, mapActions } from "vuex";
 import LoginPanel from "./components/LoginPanel.vue";
 export default {
   name: "App",

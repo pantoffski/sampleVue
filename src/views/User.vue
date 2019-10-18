@@ -1,13 +1,15 @@
 <template>
-  <div class="user">
-     <div class="imgContainer">
-        <div v-for="(v,index) in imgs" :key="index">
-          <img :src="'/upload/'+v.url" @click="zoom(index)" />
-          <i class="fa fa-minus-circle fa-2x" @click="delImg(index)"></i>
-        </div>
-     </div>
-    <button class="btn" :class="btnClass" @click.prevent="browse">{{btnTxt}}</button>
+  <div class="user container">
+    <router-link :to="{name:'userList'}">กลับ</router-link>
     <input type="file" @change="doUpload" ref="inpFile" style="display:none;" />
+    <div class="imgContainer">
+      <div v-for="(v,index) in imgs" :key="index">
+        <img :src="'/upload/'+v.url" @click="zoom(index)" />
+        <i v-if="isOwner" class="fa fa-minus-circle fa-2x" @click="delImg(index)"></i>
+      </div>
+    </div>
+    <button v-if="isOwner" class="btn" :class="btnClass" @click.prevent="browse">{{btnTxt}}</button>
+
     <div class="zoom" v-if="isZoom">
       <hr :style="zoomImgStyle" @click="isZoom=false" />
     </div>
@@ -15,15 +17,15 @@
 </template>
 
 <script>
-
 import { mapState } from "vuex";
 export default {
   name: "User",
-  props:['id'],data() {
+  props: ["id"],
+  data() {
     return {
       isBusy: false,
       user: {},
-      imgs:[],
+      imgs: [],
       zoomId: 0,
       isZoom: false,
       sliceSize: 200000,
@@ -38,18 +40,15 @@ export default {
     },
     delImg(idx) {
       if (confirm("ต้องการลบรูปนี้ ?")) {
-          this.$http
-            .delete(
-              `/api/upload/${this.imgs[idx].id}`
-            )
-            .then(r => {})
-            .catch(r => {
-              alert("เกิดข้อผิดพลาดขึ้น กรุณาลองใหม่อีกครั้ง");
-            })
-            .finally(r => {
-              this.imgs.splice(idx, 1);
-            });
-        
+        this.$http
+          .delete(`/api/upload/${this.imgs[idx].id}`)
+          .then(r => {})
+          .catch(r => {
+            alert("เกิดข้อผิดพลาดขึ้น กรุณาลองใหม่อีกครั้ง");
+          })
+          .finally(r => {
+            this.imgs.splice(idx, 1);
+          });
       }
     },
     browse() {
@@ -61,18 +60,19 @@ export default {
         this.$refs.inpFile.click();
       }
     },
-  
+
     fetch() {
       this.$http
         .get(`/api/user/${this.id}`)
         .then(r => {
           this.user = r.data.user;
-          this.imgs=r.data.imgs;
+          this.imgs = r.data.imgs;
         })
         .catch(e => {
           alert(e.response.data || "เกิดข้อผิดพลาดขึ้น กรุณาลองอีกครั้ง");
         });
-    }, doUpload() {
+    },
+    doUpload() {
       var _this = this;
       if (this.isBusy) return;
       if (!this.$refs.inpFile.files[0]) return;
@@ -120,11 +120,19 @@ export default {
           }
         }
         if (isOk) {
-          await _this.$http.post(`/api/upload/move`,{to:`${_this.token.id}/${url}`,from:url})
-          .then(r => {
-          _this.imgs.push({ url:`${_this.token.id}/${url}`,id:r.data.id });})
-          .catch(e => {})
-          .finally(r => {})
+          await _this.$http
+            .post(`/api/upload/move`, {
+              to: `${_this.token.id}/${url}`,
+              from: url
+            })
+            .then(r => {
+              _this.imgs.push({
+                url: `${_this.token.id}/${url}`,
+                id: r.data.id
+              });
+            })
+            .catch(e => {})
+            .finally(r => {});
         }
         _this.isBusy = false;
       };
@@ -139,18 +147,22 @@ export default {
     }
   },
   computed: {
-    ...mapState("auth", ["token"])
-  ,
+    ...mapState("auth", ["token"]),
+    isOwner() {
+      return this.id == this.token.id;
+    },
     zoomImgStyle() {
       if (!this.imgs[this.zoomId]) return {};
-      return { "background-image": `url(/upload/${this.imgs[this.zoomId].url})` };
+      return {
+        "background-image": `url(/upload/${this.imgs[this.zoomId].url})`
+      };
     },
     btnClass() {
       return this.isBusy ? "btn-warning" : "btn-success";
     },
     btnTxt() {
       return this.isBusy ? `กำลัง upload, ${this.perc}%` : "เพิ่มรูป";
-    } 
+    }
   },
   mounted() {
     this.fetch();
@@ -187,7 +199,7 @@ export default {
     }
   }
   .imgContainer {
-    &  > div {
+    & > div {
       display: inline-block;
       padding: 5px;
       margin: 15px;

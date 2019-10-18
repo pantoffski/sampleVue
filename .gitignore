@@ -20,3 +20,5 @@ yarn-error.log*
 *.sln
 *.sw?
 /cfg/cfg.php
+/api/lib/recaptcha
+/api/vendor
