@@ -6,6 +6,10 @@ import "bootstrap/scss/bootstrap.scss";
 
 Vue.config.productionTip = false
 
+import panZoom from "vue-panzoom";
+
+// install plugin
+Vue.use(panZoom);
 new Vue({
   router,
   store,

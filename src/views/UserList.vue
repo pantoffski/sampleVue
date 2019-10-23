@@ -4,6 +4,7 @@
       <thead>
         <th>ชื่อ user</th>
         <th>จัดการ</th>
+        <th>พื้นที่ให้บริการ</th>
       </thead>
       <tbody>
         <tr v-for="(v,index) in users" :key="index">
@@ -14,6 +15,13 @@
               class="btn btn-primary"
               :to="{name:'user',params:{id:v.id}}"
             >จัดการรูป</router-link>
+          </td>
+          <td>
+            <router-link
+              tag="button"
+              class="btn btn-info"
+              :to="{name:'coverage',params:{id:v.id}}"
+            >จัดการ</router-link>
           </td>
         </tr>
       </tbody>

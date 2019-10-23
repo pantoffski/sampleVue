@@ -22,3 +22,4 @@ yarn-error.log*
 /cfg/cfg.php
 /api/lib/recaptcha
 /api/vendor
+*.geojson
