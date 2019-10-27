@@ -1,7 +1,7 @@
 <template>
-  <g @click="isSelected=!isSelected" class="mapArea" cursor="pointer" pointer-events="all">
+  <g @click="clkHandle" class="mapArea" cursor="pointer" pointer-events="all">
     <!-- <g> -->
-      <path :id="id" :class="isSelected?'y':''" :d="d" />
+    <path :id="id" :class="isSelected?'y':''" :d="d" />
     <!-- </g> -->
   </g>
 </template>
@@ -18,7 +18,11 @@ export default {
       dd: "M150 0 L75 200 L225 200 Z"
     };
   },
-
+  methods: {
+    clkHandle() {
+      this.isSelected = !this.isSelected;
+    this.$emit('clk');}
+  },
   computed: {
     d() {
       if (!this.areaInfo.geometry) return;
@@ -40,7 +44,7 @@ export default {
 </script>
 <style lang="scss">
 .mapArea {
-   path {
+  path {
     fill: rgb(102, 158, 56);
     &.y {
       fill: green;
