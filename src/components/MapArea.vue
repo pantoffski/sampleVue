@@ -1,7 +1,7 @@
 <template>
-  <g @click="clkHandle" class="mapArea" cursor="pointer" pointer-events="all">
+  <g @click="clkHandle" class="mapArea" cursor="pointer" >
     <!-- <g> -->
-    <path :id="id" :class="isSelected?'y':''" :d="d" />
+    <path :id="id" :class="isSelected?'y':''" :d="d" stroke="gray" stroke-width="0.01" />
     <!-- </g> -->
   </g>
 </template>
@@ -9,11 +9,11 @@
 <script>
 export default {
   name: "MapArea",
-  props: ["areaInfo"],
+  props: ["areaInfo", "bound"],
   data() {
     return {
       isSelected: false,
-      scale: 30,
+      scale: 1,
       id: `path${Math.floor(Math.random() * 1000000)}`,
       dd: "M150 0 L75 200 L225 200 Z"
     };
@@ -21,19 +21,19 @@ export default {
   methods: {
     clkHandle() {
       this.isSelected = !this.isSelected;
-    this.$emit('clk');}
+      this.$el.blur();
+      this.$emit("clk");
+    }
   },
   computed: {
     d() {
       if (!this.areaInfo.geometry) return;
-      return this.areaInfo.geometry.coordinates[0]
+      return this.areaInfo.geometry.coordinates
         .map(
           vv =>
             "M" +
-            vv
-              .map(
-                v => (v[0] - 90) * this.scale + " " + (20 - v[1]) * this.scale
-              )
+            vv[0]
+              .map(v => v[0] * this.scale + " " +( this.bound.top-v[1]) * this.scale)
               .join("L") +
             "Z"
         )
@@ -44,6 +44,7 @@ export default {
 </script>
 <style lang="scss">
 .mapArea {
+ // pointer-events: none;
   path {
     fill: rgb(102, 158, 56);
     &.y {
