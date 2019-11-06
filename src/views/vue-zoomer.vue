@@ -60,7 +60,7 @@ export default {
       animTranslateX: 0,
       translateY: 0,
       animTranslateY: 0,
-      scale: 1,
+      scale: 1.0000001,
       animScale: 1,
       // Mouse states
       lastFullWheelTime: 0,
@@ -91,6 +91,7 @@ export default {
   watch: {
     scale(val) {
       if (val !== 1) {
+        this.$emit("scaleChange", val);
         this.$emit("update:zoomed", true);
         this.panLocked = false;
       }
@@ -107,6 +108,7 @@ export default {
     window.addEventListener("resize", this.onWindowResize);
     this.onWindowResize();
     this.refreshContainerPos();
+    this.initView();
     this.loop();
   },
   destroyed() {
@@ -116,6 +118,17 @@ export default {
     // console.log('destroy')
   },
   methods: {
+    initView() {
+      var scaleX = this.containerWidth / (this.bound.right - this.bound.left),
+        scaleY = this.containerHeight / (this.bound.top - this.bound.bottom),
+        scale = Math.min(scaleX, scaleY);
+      var tx = scale / 2 - 0.5;
+      var ty = scale / 2 - 0.5;
+      this.scale = scale;
+      this.translateX = tx;
+      this.translateY = ty;
+      console.log("init vieww ", scale, scaleX, scaleY, tx, ty);
+    },
     // API ---------------------------------------------------------------------
     reset() {
       this.scale = 1;
@@ -135,7 +148,9 @@ export default {
     // scale
     // Zoom the image with the point at the pointer(mouse or pinch center) pinned.
     // Simplify: This can be regard as vector pointer to old-image-center scaling.
-    tryToScale(scaleDelta) {
+    tryToScale:_debounce(function(scaleDelta) {
+      console.log('try to scale ',scaleDelta);
+      
       let newScale = this.scale * scaleDelta;
       // damping
       if (newScale < this.minScale || newScale > this.maxScale) {
@@ -145,22 +160,23 @@ export default {
         newScale = this.scale * scaleDelta;
       }
       scaleDelta = newScale / this.scale;
-      this.scale = newScale;
+      this.animScale = this.scale = newScale;
+
       if (this.pivot !== "image-center") {
         let normMousePosX =
           (this.pointerPosX - this.containerLeft) / this.containerWidth;
         let normMousePosY =
           (this.pointerPosY - this.containerTop) / this.containerHeight;
-        this.translateX =
+        this.animTranslateX = this.translateX =
           (0.5 + this.translateX - normMousePosX) * scaleDelta +
           normMousePosX -
           0.5;
-        this.translateY =
+        this.animTranslateY = this.translateY =
           (0.5 + this.translateY - normMousePosY) * scaleDelta +
           normMousePosY -
           0.5;
       }
-    },
+    },100),
     setPointerPosCenter() {
       this.pointerPosX = this.containerLeft + this.containerWidth / 2;
       this.pointerPosY = this.containerTop + this.containerHeight / 2;
@@ -264,7 +280,7 @@ export default {
       // console.log('loop', this.raf)
     },
     gainOn(from, to) {
-      let delta = (to - from) * 0.3;
+      let delta = (to - from) * 1;
       // console.log('gainOn', from, to, from + delta)
       if (Math.abs(delta) > 1e-5) {
         return from + delta;
@@ -304,7 +320,7 @@ export default {
     },
     onMouseWheelDo(wheelDelta) {
       // Value basis: One mouse wheel (wheelDelta=+-120) means 1.25/0.8 scale.
-      let scaleDelta = Math.pow(1.25, wheelDelta / 120);
+      let scaleDelta = Math.pow(1.95, wheelDelta / 120);
       this.tryToScale(scaleDelta);
       this.onInteractionEnd();
     },
@@ -324,7 +340,8 @@ export default {
     },
     onMouseOut: _debounce(function(ev) {
       if (!this.isPointerDown) this.setPointerPosCenter();
-      console.log("onMouseOut", this.isPointerDown, ev);
+      //console.log("onMouseOut", this.isPointerDown, ev);
+      //this.initView();
     }, 100),
     onMouseMove(ev) {
       this.onPointerMove(ev.clientX, ev.clientY);
@@ -384,7 +401,7 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 .vue-zoomer {
   // position relative
   overflow: hidden;

@@ -1,7 +1,7 @@
 <template>
   <g @click="clkHandle" class="mapArea" cursor="pointer" >
     <!-- <g> -->
-    <path :id="id" :class="isSelected?'y':''" :d="d" stroke="gray" stroke-width="0.01" />
+    <path :foo='areaInfo.properties.ADM1_PCODE' :id="id" :class="isSelected?'y':''" :d="d" stroke="gray" stroke-width="0.01" />
     <!-- </g> -->
   </g>
 </template>
@@ -13,8 +13,7 @@ export default {
   data() {
     return {
       isSelected: false,
-      scale: 1,
-      id: `path${Math.floor(Math.random() * 1000000)}`,
+      id: `path${Math.floor(Math.random() * 100000000)}`,
       dd: "M150 0 L75 200 L225 200 Z"
     };
   },
@@ -33,7 +32,7 @@ export default {
           vv =>
             "M" +
             vv[0]
-              .map(v => v[0] * this.scale + " " +( this.bound.top-v[1]) * this.scale)
+              .map(v => (v[0]-this.bound.left)+ " " +( this.bound.top-v[1]))
               .join("L") +
             "Z"
         )

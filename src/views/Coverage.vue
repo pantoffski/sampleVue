@@ -1,75 +1,118 @@
 <template>
-  <div class="coverage">
-    <vue-zoomer v-if="d">
-      <map-area
-        @clk="cnt++"
-        v-for="(v,index) in d.features"
-        :key="index"
-        :areaInfo="v"
-        :bound="bound"
+  <div style='height:100vh;width:100vw;'>
+    <div style="height: 10%; overflow: auto;">
+      <h3>GeoJSON</h3>
+      <span v-if="loading">Loading...</span>
+      <label for="checkbox">GeoJSON Visibility</label>
+      <input id="checkbox" v-model="show" type="checkbox" />
+      <label for="checkboxTooltip">Enable tooltip</label>
+      <input id="checkboxTooltip" v-model="enableTooltip" type="checkbox" />
+      <input v-model="fillColor" type="color" />
+      <br />
+    </div>
+    <l-map :zoom="zoom" @zoomend='zoomend' :center="center" style="height: 90%">
+      <l-tile-layer :url="url" :attribution="attribution" />
+      <l-geo-json
+        v-if="show&&zoom<8"
+        :geojson="geojson"
+        :options="options"
+        :options-style="styleFunction"
       />
-    </vue-zoomer>
-    <br />
-    {{cnt}} {{bound}}
+      <l-geo-json
+        v-if="show&&zoom>=8"
+        :geojson="geojson2"
+        :options="options"
+        :options-style="styleFunction"
+      />
+    </l-map>
   </div>
 </template>
 
 <script>
-import _debounce from "lodash.debounce";
-import vueZoomer from "./vue-zoomer.vue";
-import mapArea from "./../components/MapArea.vue";
+import { latLng } from "leaflet";
+import { LMap, LTileLayer, LMarker, LGeoJson } from "vue2-leaflet";
+
+import axios from "axios";
+
 export default {
-  name: "Coverage",
-  components: { mapArea, vueZoomer },
+  name: "Example",
+  components: {
+    LMap,
+    LTileLayer,
+    LGeoJson,
+    LMarker
+  },
   data() {
     return {
-      d: null,
-      cnt: 0
+      loading: false,
+      loading2: false,
+      show: true,
+      enableTooltip: true,
+      zoom: 6,
+      center: [13, 100.219482],
+      geojson: null,
+      geojson2: null,
+      fillColor: "#e4ce7f",
+      url: "http://{s}.tile.osm.org/{z}/{x}/{y}.png",
+      attribution:
+        '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      marker: latLng(13.41322, 101.219482)
     };
   },
-  methods: {
-    async fetchJSON() {
-      await this.$http
-        .get(`/province.geojson`)
-        .then(r => {
-          this.d = r.data;
-        })
-        .catch(e => {})
-        .finally(r => {});
-    }
-  },
   computed: {
-    features() {
-      if (!this.d) return [];
-      return this.d.features.slice(0, 2);
+    options() {
+      return {
+        onEachFeature: this.onEachFeatureFunction
+      };
     },
-    bound() {
-      var top, left, bottom, right;
-      if (this.d)
-        this.d.features.forEach(vvv =>
-          vvv.geometry.coordinates.forEach(vv =>
-            vv[0].forEach(v => {
-              if (top == undefined || v[1] > top) top = v[1];
-              if (bottom == undefined || v[1] < bottom) bottom = v[1];
-              if (left == undefined || v[0] < left) left = v[0];
-              if (right == undefined || v[0] > right) right = v[0];
-            })
-          )
+    styleFunction() {
+      const fillColor = this.fillColor; // important! need touch fillColor in computed for re-calculate when change fillColor
+      return () => {
+        return {
+          weight: 2,
+          color: "#ECEFF1",
+          opacity: 1,
+          fillColor: fillColor,
+          fillOpacity: 1
+        };
+      };
+    },
+    onEachFeatureFunction() {
+      if (!this.enableTooltip) {
+        return () => {};
+      }
+      return (feature, layer) => {
+        layer.bindTooltip(
+          "<div>code:" +
+            feature.properties.code +
+            "</div><div>nom: " +
+            feature.properties.nom +
+            "</div>",
+          { permanent: false, sticky: true }
         );
-      return { top, bottom, left, right };
+      };
     }
-  },
-  async mounted() {
-    await this.fetchJSON();
-    window.addEventListener("resize", this.onWindowResize);
+  },methods:{zoomend(e){this.zoom=e.target._zoom;
+  },},
+  created() {
+    this.loading = true;
+    this.loading2 = true;
+    axios
+      .get(
+        "./province.geojson"
+      )
+      .then(response => {
+        this.geojson = response.data;
+        this.loading = false;
+      });
+    axios
+      .get(
+        "./district.geojson"
+      )
+      .then(response => {
+        this.geojson2 = response.data;
+        this.loading2 = false;
+      });
   }
 };
 </script>
-
-<style lang="scss">
-.coverage {
-  width: 100vw;
-  height: 500px;
-  background: #aaa;
-}
-</style>
