@@ -82,11 +82,16 @@ export default {
         return () => {};
       }
       return (feature, layer) => {
+        layer.on({
+        click: function(){console.log('clicked');console.log(feature);
+        
+        }
+    });
         layer.bindTooltip(
           "<div>code:" +
-            feature.properties.code +
-            "</div><div>nom: " +
-            feature.properties.nom +
+            (feature.properties.ADM2_PCODE||feature.properties.ADM1_PCODE) +
+            "</div><div>name: " +
+            (feature.properties.ADM2_EN||feature.properties.ADM1_EN) +
             "</div>",
           { permanent: false, sticky: true }
         );
@@ -99,7 +104,7 @@ export default {
     this.loading2 = true;
     axios
       .get(
-        "./province.geojson"
+        "/province.geojson"
       )
       .then(response => {
         this.geojson = response.data;
@@ -107,7 +112,7 @@ export default {
       });
     axios
       .get(
-        "./district.geojson"
+        "/district.geojson"
       )
       .then(response => {
         this.geojson2 = response.data;
