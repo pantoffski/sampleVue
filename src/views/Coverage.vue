@@ -9,13 +9,13 @@
     <l-map :zoom="zoom" @zoomend="zoomend" :center="center" style="height: 90%">
       <!-- <l-tile-layer :url="url" :attribution="attribution" /> -->
       <l-geo-json
-        v-if="show&&zoom<9"
+        :visible="show&&zoom<9"
         :geojson="geojson"
         :options="options"
         :options-style="styleFunction"
       />
       <l-geo-json
-        v-if="show&&zoom>=9"
+        :visible="show&&zoom>=9"
         :geojson="geojson2"
         :options="options"
         :options-style="styleFunction"
