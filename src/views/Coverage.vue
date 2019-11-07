@@ -23,7 +23,7 @@
       <l-geo-json
         :visible="show&&zoom>=9"
         :geojson="geojson"
-        :options-style="{weight: 2,color: '#666666',opacity: 1,          fillColor: 'transparent',fillOpacity: 1,interactive: false}"
+        :options-style="{weight: 3,color: '#666666',opacity: 1,          fillColor: 'transparent',fillOpacity: 1,interactive: false}"
         
       />
     </l-map>
