@@ -20,4 +20,14 @@ $app->group('/user', function () use ($app) {
     $ret['imgs'] = $db->q("select * from img where uId=?", $args['id']);
     return $res->write(json_encode($ret));
   });
+  $app->POST('/coverage', function ($req, $res, $args) {
+    $db = $req->getAttribute('db');
+    $d  = $req->getParsedBody();
+    $jwt = $req->getAttribute('jwt');
+    if (!$jwt->id) {
+      return $res->withStatus(401);
+    }
+    $db->q("update user set coverage=? where id=?",$d['area'],$d['id']);
+
+  });
 });

@@ -18,9 +18,9 @@
           </td>
           <td>
             <router-link
-              tag="button"
+              tag="a"
               class="btn btn-info"
-              :to="{name:'coverage',params:{id:v.id}}"
+              :to="v.coverage?{name:'coverageWithParams',params:{id:v.id,pCodes:v.coverage.split('/')}}:{name:'coverage',params:{id:v.id}}"
             >จัดการ</router-link>
           </td>
         </tr>

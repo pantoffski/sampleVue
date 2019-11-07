@@ -26,6 +26,12 @@ export default new Router({
       name: "coverage",
       props: true,
       component: coverage
+    },
+    {
+      path: "/coverage/:id/p/:pCodes+",
+      name: "coverageWithParams",
+      props: true,
+      component: coverage
     }
   ]
 });
