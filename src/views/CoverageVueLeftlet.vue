@@ -6,33 +6,58 @@
       {{selectedArea}}
       <span v-if="!isLoaded">Loading...</span>
     </div>
-    <div id="map" style="height:90%;position:relative;"></div>
+    <l-map v-if="isLoaded" :zoom="zoom" @zoomend="zoomend" :center="center" style="height: 90%">
+      <!-- <l-tile-layer :url="url" :attribution="attribution" /> -->
+      <l-geo-json
+        :visible="show&&zoom<9"
+        :geojson="geojson"
+        :options="{
+        onEachFeature: onEachFeatureFunc
+      }"
+        :options-style="styleFunc"
+      />
+      <l-geo-json
+        :visible="show&&zoom>=9"
+        :geojson="geojson2"
+        :options="{
+        onEachFeature: onEachFeatureFunc
+      }"
+        :options-style="styleFunc"
+      />
+      <l-geo-json
+        :visible="show&&zoom>=9"
+        :geojson="geojson"
+        :options-style="{weight: 3,color: '#c05c24',opacity: 1,fillColor: 'transparent',fillOpacity: 1,interactive: false}"
+      />
+    </l-map>
   </div>
 </template>
 
 <script>
-//var L= require( "leaflet");
-
-import L from "leaflet";
+//import { latLng } from "leaflet";
+import { LMap, LGeoJson } from "vue2-leaflet";
 //import { LMap, LTileLayer, LMarker, LGeoJson } from "vue2-leaflet";
 
 export default {
   name: "Coverage",
   props: ["id", "pCodes"],
-  components: {},
+  components: {
+    LMap,
+    LGeoJson
+  },
   data() {
     return {
       isLoaded: false,
+      loading: false,
+      loading2: false,
+      show: true,
+      enableTooltip: true,
       zoom: 6,
-      showDistrictAtZoomLvl: 9,
-      map: null,
-      provLayer: null,
-      provGridLayer: null,
-      distLayer: null,
       center: [13, 100.219482],
       geojson: null,
       geojson2: null,
       fillColor: "burlywood",
+      trigger: 0,
       provDist: {},
       distProv: {},
       selectedProv: this.pCodes
@@ -103,7 +128,7 @@ export default {
           });
         }
       }
-      return ret;
+      return ret.map(v => v.replace("TH", ""));
     }
   },
   methods: {
@@ -113,7 +138,7 @@ export default {
       if (v.ADM2_PCODE) {
         if (!this.selectedDist[v.ADM2_PCODE]) fillColor = "green";
       } else {
-        if (this.selectedProv[v.ADM1_PCODE] != 1) fillColor = "green";
+        if (this.selectedProv[v.ADM1_PCODE] == null) fillColor = "green";
       }
       e.target.setStyle({
         weight: 2,
@@ -127,16 +152,13 @@ export default {
     },
     onEachFeatureFunc(feature, layer) {
       layer.on({ click: this.layerClick });
-      var isPermanent = feature.properties.w > 0.1875 * Math.pow(2, this.zoom);
       layer.bindTooltip(
-        feature.properties.ADM2_TH || feature.properties.ADM1_TH,
-        isPermanent
-          ? {
-              permanent: true,
-              direction: "center",
-              className: "provNamePermanent"
-            }
-          : { direction: "auto" }
+        "<div>code:" +
+          (feature.properties.ADM2_PCODE || feature.properties.ADM1_PCODE) +
+          "</div><div>name: " +
+          (feature.properties.ADM2_TH || feature.properties.ADM1_TH) +
+          "</div>",
+        { permanent: false, sticky: true }
       );
     },
     styleFunc(v) {
@@ -158,32 +180,6 @@ export default {
         fillColor,
         fillOpacity: 1
       };
-    },
-    zoomend() {
-      if (!this.map) return;
-      var _this = this;
-      var newZoom = this.map.getZoom();
-      if (
-        newZoom >= this.showDistrictAtZoomLvl &&
-        this.zoom < this.showDistrictAtZoomLvl
-      ) {
-        this.provLayer.remove();
-        this.distLayer.addTo(this.map);
-        this.provGridLayer.addTo(this.map);
-      }
-      if (
-        newZoom < this.showDistrictAtZoomLvl &&
-        this.zoom >= this.showDistrictAtZoomLvl
-      ) {
-        this.distLayer.remove();
-        this.provGridLayer.remove();
-        this.provLayer.addTo(this.map);
-      }
-      this.map.getPane("label").classList.remove(`zoom${this.zoom}`);
-      this.map.getPane("label").classList.add(`zoom${newZoom}`);
-      this.zoom = newZoom;
-
-      console.log("zoomend", this.map.getZoom());
     },
     initPCodes() {
       var pCodes = this.pCodes
@@ -216,89 +212,6 @@ export default {
       }
       this.selectedProv = selectedProv;
       this.selectedDist = selectedDist;
-
-      var map = L.map("map", { minZoom: 6, maxZoom: 13 });
-      map.createPane("dist");
-      map.getPane("dist").style.zIndex = 550;
-      map.createPane("prov");
-      map.getPane("prov").style.zIndex = 551;
-      map.createPane("label");
-      map.getPane("label").style.zIndex = 552;
-      // permanent province label
-      this.geojson.features.forEach(v => {
-        var zLevel =
-          10 - Math.floor(Math.log(v.properties.w * 10) / Math.log(2));
-        var provNameClass = `z${
-          zLevel < this.showDistrictAtZoomLvl
-            ? zLevel
-            : this.showDistrictAtZoomLvl - 1
-        }`;
-        var m = L.circleMarker(v.properties.cm, {
-          pane: "label",
-          interactive: false,
-          opacity: 0,
-          fillColor: "transparent"
-        });
-        m.addTo(map);
-        m.bindTooltip(v.properties.ADM1_TH, {
-          pane: "label",
-          permanent: true,
-          direction: "center",
-          className: "provNamePermanent " + provNameClass
-        });
-      });
-      // permanent district label
-      this.geojson2.features.forEach(v => {
-        var zLevel =
-          13 - Math.floor(Math.log(v.properties.w * 30) / Math.log(2));
-        console.log(zLevel);
-
-        var provNameClass = `z${
-          zLevel < this.showDistrictAtZoomLvl
-            ? this.showDistrictAtZoomLvl
-            : zLevel
-        }`;
-        var m = L.circleMarker(v.properties.cm, {
-          pane: "label",
-          interactive: false,
-          opacity: 0,
-          fillColor: "transparent"
-        });
-        m.addTo(map);
-        m.bindTooltip(v.properties.ADM2_TH, {
-          pane: "label",
-          permanent: true,
-          direction: "center",
-          className: "provNamePermanent " + provNameClass
-        });
-      });
-
-      map.on("zoomend", this.zoomend);
-      map.setView(this.center, this.zoom);
-      this.map = map;
-
-      this.provGridLayer = L.geoJSON(this.geojson, {
-        pane: "prov",
-        style: {
-          weight: 3,
-          color: "#c05c24",
-          opacity: 1,
-          fillColor: "transparent",
-          fillOpacity: 1,
-          interactive: false
-        }
-      });
-      this.distLayer = L.geoJSON(this.geojson2, {
-        pane: "dist",
-        style: this.styleFunc,
-        onEachFeature: this.onEachFeatureFunc
-      });
-      this.provLayer = L.geoJSON(this.geojson, {
-        style: this.styleFunc,
-        onEachFeature: this.onEachFeatureFunc
-      });
-      this.provLayer.addTo(this.map);
-      this.zoomend();
       this.isLoaded = true;
     },
     toggle(id) {
@@ -307,7 +220,7 @@ export default {
       var currVal;
       var selectedProv = JSON.parse(JSON.stringify(this.selectedProv));
       var selectedDist = JSON.parse(JSON.stringify(this.selectedDist));
-      var _this = this;
+
       if (id.length == 4) {
         //district
         currVal = selectedDist[id];
@@ -321,7 +234,7 @@ export default {
         selectedProv[provCode] = -1;
         if (districtInSameProv == 0) delete selectedProv[provCode];
         if (districtInSameProv == this.provDist[provCode].length)
-          selectedProv[provCode] = 1;
+          selectedProv[provCode] == 1;
       } else {
         //province
         currVal = selectedProv[id];
@@ -335,23 +248,9 @@ export default {
       }
       this.selectedProv = selectedProv;
       this.selectedDist = selectedDist;
-
-      // toggle layer's color side effect
-      if (id.length == 4) {
-        //district
-        this.provLayer.eachLayer(function(layer) {
-          if (layer.feature.properties.ADM1_PCODE == provCode) {
-            layer.setStyle(_this.styleFunc(layer.feature));
-          }
-        });
-      } else {
-        //province
-        this.distLayer.eachLayer(function(layer) {
-          if (layer.feature.properties.ADM1_PCODE == id) {
-            layer.setStyle(_this.styleFunc(layer.feature));
-          }
-        });
-      }
+    },
+    zoomend(e) {
+      this.zoom = e.target._zoom;
     }
   },
   async created() {
@@ -362,83 +261,6 @@ export default {
       this.geojson2 = response.data;
     });
     this.initPCodes();
-  },
-  beforeDestroy() {
-    this.map.off();
-    this.map.remove();
   }
 };
 </script>
-<style lang="scss">
-.leaflet-label-pane {
-  .leaflet-tooltip {
-    color: transparent;
-  }
-  &.zoom5 {
-    .z5 {
-      color: black;
-    }
-  }
-  &.zoom6 {
-    .z5,
-    .z6 {
-      color: black;
-    }
-  }
-  &.zoom7 {
-    .z5,
-    .z6,
-    .z7 {
-      color: black;
-    }
-  }
-  &.zoom8 {
-    .z5,
-    .z6,
-    .z7,
-    .z8 {
-      color: black;
-    }
-  }
-  &.zoom9 {
-    .z9 {
-      color: black;
-    }
-  }
-  &.zoom10 {
-    .z9,
-    .z10 {
-      color: black;
-    }
-  }
-  &.zoom11 {
-    .z9,
-    .z10,
-    .z11 {
-      color: black;
-    }
-  }
-  &.zoom12 {
-    .z9,
-    .z10,
-    .z11,
-    .z12 {
-      color: black;
-    }
-  }
-  &.zoom13 {
-    .z9,
-    .z10,
-    .z11,
-    .z12,
-    .z13 {
-      color: black;
-    }
-  }
-}
-.leaflet-tooltip.provNamePermanent {
-  background: none;
-  border: none;
-  box-shadow: none;
-}
-</style>
