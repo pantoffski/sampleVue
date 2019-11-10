@@ -247,31 +247,31 @@ export default {
           className: "provNamePermanent " + provNameClass
         });
       });
-      // permanent district label
-      this.geojson2.features.forEach(v => {
-        var zLevel =
-          13 - Math.floor(Math.log(v.properties.w * 30) / Math.log(2));
-        console.log(zLevel);
+      // // permanent district label
+      // this.geojson2.features.forEach(v => {
+      //   var zLevel =
+      //     13 - Math.floor(Math.log(v.properties.w * 30) / Math.log(2));
+      //   console.log(zLevel);
 
-        var provNameClass = `z${
-          zLevel < this.showDistrictAtZoomLvl
-            ? this.showDistrictAtZoomLvl
-            : zLevel
-        }`;
-        var m = L.circleMarker(v.properties.cm, {
-          pane: "label",
-          interactive: false,
-          opacity: 0,
-          fillColor: "transparent"
-        });
-        m.addTo(map);
-        m.bindTooltip(v.properties.ADM2_TH, {
-          pane: "label",
-          permanent: true,
-          direction: "center",
-          className: "provNamePermanent " + provNameClass
-        });
-      });
+      //   var provNameClass = `z${
+      //     zLevel < this.showDistrictAtZoomLvl
+      //       ? this.showDistrictAtZoomLvl
+      //       : zLevel
+      //   }`;
+      //   var m = L.circleMarker(v.properties.cm, {
+      //     pane: "label",
+      //     interactive: false,
+      //     opacity: 0,
+      //     fillColor: "transparent"
+      //   });
+      //   m.addTo(map);
+      //   m.bindTooltip(v.properties.ADM2_TH, {
+      //     pane: "label",
+      //     permanent: true,
+      //     direction: "center",
+      //     className: "provNamePermanent " + provNameClass
+      //   });
+      // });
 
       map.on("zoomend", this.zoomend);
       map.setView(this.center, this.zoom);
